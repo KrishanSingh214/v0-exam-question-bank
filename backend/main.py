@@ -1,21 +1,18 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 # Load environment variables
 load_dotenv()
 
-# Database setup
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/question_bank")
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Import models and create tables
+# Import database and models
+from database import engine, init_db
 from models import Base
+
+# Initialize database tables
 Base.metadata.create_all(bind=engine)
 
 # Import routers
@@ -25,10 +22,12 @@ from routes import auth, questions, users, recommendations, admin
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    print("Starting Question Bank API...")
+    print("[v0] Starting Question Bank API...")
+    init_db()
+    print("[v0] Database initialized successfully")
     yield
     # Shutdown
-    print("Shutting down Question Bank API...")
+    print("[v0] Shutting down Question Bank API...")
 
 # Create FastAPI app
 app = FastAPI(
