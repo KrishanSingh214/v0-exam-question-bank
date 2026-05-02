@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: qb_postgres
+    environment:
+      POSTGRES_USER: qbuser
+      POSTGRES_PASSWORD: qbpassword
+      POSTGRES_DB: question_bank
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qbuser -d question_bank"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - qb_network
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: qb_backend
+    environment:
+      DATABASE_URL: postgresql://qbuser:qbpassword@postgres:5432/question_bank
+      SECRET_KEY: your-secret-key-change-in-production
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - qb_network
+
+  # Frontend (Nginx)
+  frontend:
+    image: nginx:alpine
+    container_name: qb_frontend
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - backend
+    networks:
+      - qb_network
+
+volumes:
+  postgres_data:
+
+networks:
+  qb_network:
+    driver: bridge
