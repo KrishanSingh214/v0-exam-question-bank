@@ -3,9 +3,20 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 # Load environment variables
 load_dotenv()
+
+# Database setup
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/question_bank")
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Import models and create tables
+from models import Base
+Base.metadata.create_all(bind=engine)
 
 # Import routers
 from routes import auth, questions, users, recommendations, admin
@@ -28,7 +39,7 @@ app = FastAPI(
 )
 
 # Add CORS middleware
-origins = os.getenv("CORS_ORIGINS", "http://localhost:8000,http://localhost:3000").split(",")
+origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:8000").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,

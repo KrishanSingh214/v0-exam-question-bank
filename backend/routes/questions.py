@@ -1,175 +1,173 @@
-from fastapi import APIRouter, HTTPException, Depends, Query
-from typing import List
-from schemas import QuestionResponse, QuestionSearchRequest, BookmarkCreate, BookmarkResponse, UserProgressCreate
+from fastapi import APIRouter, HTTPException, Depends, Query, Header
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from typing import List, Optional
+from datetime import datetime
+
 from database import get_db
-from utils import extract_user_id_from_token
+from models import Question, Bookmark, User, UserProgress
+from routes.auth import get_current_user
 
 router = APIRouter()
 
-@router.get("/", response_model=List[QuestionResponse])
+class QuestionResponse(BaseModel):
+    id: int
+    question_text: str
+    option_a: str
+    option_b: str
+    option_c: str
+    option_d: str
+    difficulty_level: str
+    subject_id: int
+    topic_id: int
+    exam_id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+@router.get("/")
 def get_questions(
-    exam_id: int = Query(None),
-    subject_id: int = Query(None),
-    topic_id: int = Query(None),
-    difficulty_level: str = Query(None),
-    question_type: str = Query(None),
-    keyword: str = Query(None),
+    exam_id: Optional[int] = Query(None),
+    subject_id: Optional[int] = Query(None),
+    topic_id: Optional[int] = Query(None),
+    difficulty_level: Optional[str] = Query(None),
+    keyword: Optional[str] = Query(None),
     limit: int = Query(20),
     offset: int = Query(0),
-    db = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """Get questions with filters"""
-    db.connect()
-    
-    query = "SELECT id, topic_id, subject_id, exam_id, question_text, question_type, difficulty_level, created_at FROM questions WHERE 1=1"
-    params = []
+    query = db.query(Question)
     
     if exam_id:
-        query += " AND exam_id = %s"
-        params.append(exam_id)
+        query = query.filter(Question.exam_id == exam_id)
     if subject_id:
-        query += " AND subject_id = %s"
-        params.append(subject_id)
+        query = query.filter(Question.subject_id == subject_id)
     if topic_id:
-        query += " AND topic_id = %s"
-        params.append(topic_id)
+        query = query.filter(Question.topic_id == topic_id)
     if difficulty_level:
-        query += " AND difficulty_level = %s"
-        params.append(difficulty_level)
-    if question_type:
-        query += " AND question_type = %s"
-        params.append(question_type)
+        query = query.filter(Question.difficulty_level == difficulty_level)
     if keyword:
-        query += " AND question_text ILIKE %s"
-        params.append(f"%{keyword}%")
+        query = query.filter(Question.question_text.ilike(f"%{keyword}%"))
     
-    query += f" LIMIT {limit} OFFSET {offset}"
+    total = query.count()
+    questions = query.limit(limit).offset(offset).all()
     
-    questions = db.execute_query(query, params if params else None)
-    db.disconnect()
-    
-    return [QuestionResponse(**dict(q)) for q in questions]
+    return {
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "questions": [QuestionResponse.from_orm(q) for q in questions]
+    }
 
 @router.get("/{question_id}", response_model=QuestionResponse)
-def get_question(question_id: int, db = Depends(get_db)):
-    """Get a single question with options"""
-    db.connect()
-    
-    query = """
-    SELECT id, topic_id, subject_id, exam_id, question_text, question_type, difficulty_level, created_at
-    FROM questions WHERE id = %s
-    """
-    question = db.execute_single(query, (question_id,))
-    
+def get_question(question_id: int, db: Session = Depends(get_db)):
+    """Get a single question"""
+    question = db.query(Question).filter(Question.id == question_id).first()
     if not question:
-        db.disconnect()
         raise HTTPException(status_code=404, detail="Question not found")
-    
-    # Get options
-    options_query = "SELECT id, option_text, is_correct FROM options WHERE question_id = %s"
-    options = db.execute_query(options_query, (question_id,))
-    db.disconnect()
-    
-    question_dict = dict(question)
-    question_dict['options'] = [dict(o) for o in options]
-    
-    return QuestionResponse(**question_dict)
+    return question
 
-@router.get("/search/advanced", response_model=List[QuestionResponse])
-def search_questions(search: QuestionSearchRequest = Depends(), db = Depends(get_db)):
-    """Advanced question search"""
-    db.connect()
-    
-    query = "SELECT id, topic_id, subject_id, exam_id, question_text, question_type, difficulty_level, created_at FROM questions WHERE 1=1"
-    params = []
-    
-    if search.exam_id:
-        query += " AND exam_id = %s"
-        params.append(search.exam_id)
-    if search.subject_id:
-        query += " AND subject_id = %s"
-        params.append(search.subject_id)
-    if search.topic_id:
-        query += " AND topic_id = %s"
-        params.append(search.topic_id)
-    if search.difficulty_level:
-        query += " AND difficulty_level = %s"
-        params.append(search.difficulty_level)
-    if search.question_type:
-        query += " AND question_type = %s"
-        params.append(search.question_type)
-    if search.keyword:
-        query += " AND question_text ILIKE %s"
-        params.append(f"%{search.keyword}%")
-    
-    query += f" LIMIT {search.limit} OFFSET {search.offset}"
-    
-    questions = db.execute_query(query, params if params else None)
-    db.disconnect()
-    
-    return [QuestionResponse(**dict(q)) for q in questions]
-
-@router.post("/bookmarks", response_model=BookmarkResponse)
-def add_bookmark(bookmark: BookmarkCreate, authorization: str = None, db = Depends(get_db)):
+@router.post("/bookmarks/{question_id}")
+def add_bookmark(
+    question_id: int,
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
     """Add question to bookmarks"""
-    user_id = extract_user_id_from_token(authorization.split(" ")[1])
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    db.connect()
+    current_user = get_current_user(authorization, db)
     
     # Check if question exists
-    query = "SELECT id FROM questions WHERE id = %s"
-    question = db.execute_single(query, (bookmark.question_id,))
+    question = db.query(Question).filter(Question.id == question_id).first()
     if not question:
-        db.disconnect()
         raise HTTPException(status_code=404, detail="Question not found")
     
-    # Add bookmark
-    query = """
-    INSERT INTO bookmarks (user_id, question_id)
-    VALUES (%s, %s)
-    ON CONFLICT (user_id, question_id) DO NOTHING
-    RETURNING id, user_id, question_id, created_at
-    """
-    result = db.execute_single(query, (user_id, bookmark.question_id))
-    db.disconnect()
+    # Check if already bookmarked
+    existing = db.query(Bookmark).filter(
+        Bookmark.user_id == current_user.id,
+        Bookmark.question_id == question_id
+    ).first()
     
-    if result:
-        return BookmarkResponse(**dict(result))
-    raise HTTPException(status_code=400, detail="Failed to add bookmark")
+    if existing:
+        raise HTTPException(status_code=400, detail="Already bookmarked")
+    
+    bookmark = Bookmark(user_id=current_user.id, question_id=question_id)
+    db.add(bookmark)
+    db.commit()
+    
+    return {"message": "Bookmarked successfully"}
 
-@router.get("/bookmarks/user", response_model=List[QuestionResponse])
-def get_bookmarks(authorization: str = None, db = Depends(get_db)):
+@router.get("/bookmarks/list")
+def get_bookmarks(
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
     """Get user's bookmarked questions"""
-    user_id = extract_user_id_from_token(authorization.split(" ")[1])
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+    current_user = get_current_user(authorization, db)
     
-    db.connect()
-    
-    query = """
-    SELECT q.id, q.topic_id, q.subject_id, q.exam_id, q.question_text, q.question_type, q.difficulty_level, q.created_at
-    FROM questions q
-    INNER JOIN bookmarks b ON q.id = b.question_id
-    WHERE b.user_id = %s
-    """
-    questions = db.execute_query(query, (user_id,))
-    db.disconnect()
-    
-    return [QuestionResponse(**dict(q)) for q in questions]
+    bookmarks = db.query(Bookmark).filter(Bookmark.user_id == current_user.id).all()
+    return {"bookmarks": [b.question_id for b in bookmarks]}
 
 @router.delete("/bookmarks/{question_id}")
-def remove_bookmark(question_id: int, authorization: str = None, db = Depends(get_db)):
+def remove_bookmark(
+    question_id: int,
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
     """Remove question from bookmarks"""
-    user_id = extract_user_id_from_token(authorization.split(" ")[1])
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+    current_user = get_current_user(authorization, db)
     
-    db.connect()
+    bookmark = db.query(Bookmark).filter(
+        Bookmark.user_id == current_user.id,
+        Bookmark.question_id == question_id
+    ).first()
     
-    query = "DELETE FROM bookmarks WHERE user_id = %s AND question_id = %s"
-    db.execute_update(query, (user_id, question_id))
-    db.disconnect()
+    if not bookmark:
+        raise HTTPException(status_code=404, detail="Bookmark not found")
+    
+    db.delete(bookmark)
+    db.commit()
     
     return {"message": "Bookmark removed"}
+
+@router.post("/submit-answer")
+def submit_answer(
+    question_id: int = Query(...),
+    answer_given: str = Query(...),
+    time_spent_seconds: int = Query(...),
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    """Submit answer and record progress"""
+    current_user = get_current_user(authorization, db)
+    
+    question = db.query(Question).filter(Question.id == question_id).first()
+    if not question:
+        raise HTTPException(status_code=404, detail="Question not found")
+    
+    is_correct = answer_given == question.correct_answer
+    
+    # Create or update progress
+    progress = db.query(UserProgress).filter(
+        UserProgress.user_id == current_user.id,
+        UserProgress.question_id == question_id
+    ).first()
+    
+    if progress:
+        progress.answer_given = answer_given
+        progress.is_correct = is_correct
+        progress.time_spent_seconds = time_spent_seconds
+    else:
+        progress = UserProgress(
+            user_id=current_user.id,
+            question_id=question_id,
+            answer_given=answer_given,
+            is_correct=is_correct,
+            time_spent_seconds=time_spent_seconds
+        )
+        db.add(progress)
+    
+    db.commit()
+    
+    return {"is_correct": is_correct, "correct_answer": question.correct_answer}

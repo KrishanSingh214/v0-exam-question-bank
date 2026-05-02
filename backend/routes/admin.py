@@ -1,240 +1,209 @@
-from fastapi import APIRouter, HTTPException, Depends
-from typing import List
-from schemas import QuestionCreate, ExamCreate, SubjectCreate, TopicCreate, QuestionResponse, ExamResponse, SubjectResponse, TopicResponse
+from fastapi import APIRouter, HTTPException, Depends, Query
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+from pydantic import BaseModel
+from typing import Optional, List
+import os
+
 from database import get_db
+from models import Exam, Subject, Topic, Question, User, UserProgress
 
 router = APIRouter()
 
-# Admin password for simple auth
-ADMIN_PASSWORD = "admin123"  # Change this in production
+# Admin password
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 
 def verify_admin(admin_password: str):
     """Simple admin verification"""
     if admin_password != ADMIN_PASSWORD:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-@router.post("/exams", response_model=ExamResponse)
-def create_exam(exam: ExamCreate, admin_password: str, db = Depends(get_db)):
+# Pydantic models
+class ExamCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+class SubjectCreate(BaseModel):
+    exam_id: int
+    name: str
+    description: Optional[str] = None
+
+class TopicCreate(BaseModel):
+    subject_id: int
+    name: str
+    description: Optional[str] = None
+
+class QuestionCreate(BaseModel):
+    exam_id: int
+    subject_id: int
+    topic_id: int
+    question_text: str
+    option_a: str
+    option_b: str
+    option_c: str
+    option_d: str
+    correct_answer: str
+    explanation: Optional[str] = None
+    difficulty_level: str = "medium"
+
+@router.post("/exams")
+def create_exam(exam: ExamCreate, admin_password: str = Query(...), db: Session = Depends(get_db)):
     """Create a new exam"""
     verify_admin(admin_password)
     
-    db.connect()
-    
     # Check if exam already exists
-    query = "SELECT id FROM exams WHERE name = %s"
-    existing = db.execute_single(query, (exam.name,))
+    existing = db.query(Exam).filter(Exam.name == exam.name).first()
     if existing:
-        db.disconnect()
         raise HTTPException(status_code=400, detail="Exam already exists")
     
-    # Create exam
-    query = "INSERT INTO exams (name, description) VALUES (%s, %s) RETURNING id, name, description"
-    result = db.execute_single(query, (exam.name, exam.description))
-    db.disconnect()
-    
-    return ExamResponse(**dict(result))
+    db_exam = Exam(name=exam.name, description=exam.description)
+    db.add(db_exam)
+    db.commit()
+    db.refresh(db_exam)
+    return db_exam
 
-@router.get("/exams", response_model=List[ExamResponse])
-def get_exams(db = Depends(get_db)):
+@router.get("/exams")
+def get_exams(db: Session = Depends(get_db)):
     """Get all exams"""
-    db.connect()
-    query = "SELECT id, name, description FROM exams"
-    exams = db.execute_query(query)
-    db.disconnect()
-    return [ExamResponse(**dict(e)) for e in exams]
+    exams = db.query(Exam).all()
+    return exams
 
-@router.post("/subjects", response_model=SubjectResponse)
-def create_subject(subject: SubjectCreate, admin_password: str, db = Depends(get_db)):
+@router.post("/subjects")
+def create_subject(subject: SubjectCreate, admin_password: str = Query(...), db: Session = Depends(get_db)):
     """Create a new subject"""
     verify_admin(admin_password)
     
-    db.connect()
-    
     # Verify exam exists
-    query = "SELECT id FROM exams WHERE id = %s"
-    exam = db.execute_single(query, (subject.exam_id,))
+    exam = db.query(Exam).filter(Exam.id == subject.exam_id).first()
     if not exam:
-        db.disconnect()
         raise HTTPException(status_code=404, detail="Exam not found")
     
-    # Create subject
-    query = "INSERT INTO subjects (name, exam_id, description) VALUES (%s, %s, %s) RETURNING id, name, exam_id, description"
-    result = db.execute_single(query, (subject.name, subject.exam_id, subject.description))
-    db.disconnect()
-    
-    return SubjectResponse(**dict(result))
+    db_subject = Subject(exam_id=subject.exam_id, name=subject.name, description=subject.description)
+    db.add(db_subject)
+    db.commit()
+    db.refresh(db_subject)
+    return db_subject
 
-@router.get("/subjects", response_model=List[SubjectResponse])
-def get_subjects(exam_id: int = None, db = Depends(get_db)):
+@router.get("/subjects")
+def get_subjects(exam_id: Optional[int] = Query(None), db: Session = Depends(get_db)):
     """Get all subjects"""
-    db.connect()
-    
+    query = db.query(Subject)
     if exam_id:
-        query = "SELECT id, name, exam_id, description FROM subjects WHERE exam_id = %s"
-        subjects = db.execute_query(query, (exam_id,))
-    else:
-        query = "SELECT id, name, exam_id, description FROM subjects"
-        subjects = db.execute_query(query)
-    
-    db.disconnect()
-    return [SubjectResponse(**dict(s)) for s in subjects]
+        query = query.filter(Subject.exam_id == exam_id)
+    return query.all()
 
-@router.post("/topics", response_model=TopicResponse)
-def create_topic(topic: TopicCreate, admin_password: str, db = Depends(get_db)):
+@router.post("/topics")
+def create_topic(topic: TopicCreate, admin_password: str = Query(...), db: Session = Depends(get_db)):
     """Create a new topic"""
     verify_admin(admin_password)
     
-    db.connect()
-    
     # Verify subject exists
-    query = "SELECT id FROM subjects WHERE id = %s"
-    subject = db.execute_single(query, (topic.subject_id,))
+    subject = db.query(Subject).filter(Subject.id == topic.subject_id).first()
     if not subject:
-        db.disconnect()
         raise HTTPException(status_code=404, detail="Subject not found")
     
-    # Create topic
-    query = "INSERT INTO topics (name, subject_id, description) VALUES (%s, %s, %s) RETURNING id, name, subject_id, description"
-    result = db.execute_single(query, (topic.name, topic.subject_id, topic.description))
-    db.disconnect()
-    
-    return TopicResponse(**dict(result))
+    db_topic = Topic(subject_id=topic.subject_id, name=topic.name, description=topic.description)
+    db.add(db_topic)
+    db.commit()
+    db.refresh(db_topic)
+    return db_topic
 
-@router.get("/topics", response_model=List[TopicResponse])
-def get_topics(subject_id: int = None, db = Depends(get_db)):
+@router.get("/topics")
+def get_topics(subject_id: Optional[int] = Query(None), db: Session = Depends(get_db)):
     """Get all topics"""
-    db.connect()
-    
+    query = db.query(Topic)
     if subject_id:
-        query = "SELECT id, name, subject_id, description FROM topics WHERE subject_id = %s"
-        topics = db.execute_query(query, (subject_id,))
-    else:
-        query = "SELECT id, name, subject_id, description FROM topics"
-        topics = db.execute_query(query)
-    
-    db.disconnect()
-    return [TopicResponse(**dict(t)) for t in topics]
+        query = query.filter(Topic.subject_id == subject_id)
+    return query.all()
 
-@router.post("/questions", response_model=QuestionResponse)
-def create_question(question: QuestionCreate, admin_password: str, db = Depends(get_db)):
+@router.post("/questions")
+def create_question(question: QuestionCreate, admin_password: str = Query(...), db: Session = Depends(get_db)):
     """Create a new question"""
     verify_admin(admin_password)
     
-    db.connect()
-    
     # Verify topic, subject, and exam exist
-    verify_query = "SELECT id FROM topics WHERE id = %s"
-    if not db.execute_single(verify_query, (question.topic_id,)):
-        db.disconnect()
+    topic = db.query(Topic).filter(Topic.id == question.topic_id).first()
+    if not topic:
         raise HTTPException(status_code=404, detail="Topic not found")
     
-    # Create question
-    query = """
-    INSERT INTO questions (topic_id, subject_id, exam_id, question_text, question_type, difficulty_level)
-    VALUES (%s, %s, %s, %s, %s, %s)
-    RETURNING id, topic_id, subject_id, exam_id, question_text, question_type, difficulty_level, created_at
-    """
-    params = (
-        question.topic_id,
-        question.subject_id,
-        question.exam_id,
-        question.question_text,
-        question.question_type,
-        question.difficulty_level
+    db_question = Question(
+        exam_id=question.exam_id,
+        subject_id=question.subject_id,
+        topic_id=question.topic_id,
+        question_text=question.question_text,
+        option_a=question.option_a,
+        option_b=question.option_b,
+        option_c=question.option_c,
+        option_d=question.option_d,
+        correct_answer=question.correct_answer,
+        explanation=question.explanation,
+        difficulty_level=question.difficulty_level
     )
-    result = db.execute_single(query, params)
-    question_id = result['id']
-    
-    # Add options if MCQ
-    if question.options:
-        for option in question.options:
-            option_query = "INSERT INTO options (question_id, option_text, is_correct) VALUES (%s, %s, %s)"
-            db.execute_insert(option_query, (question_id, option.option_text, option.is_correct))
-    
-    db.disconnect()
-    
-    return QuestionResponse(**dict(result))
+    db.add(db_question)
+    db.commit()
+    db.refresh(db_question)
+    return db_question
 
-@router.put("/questions/{question_id}", response_model=QuestionResponse)
-def update_question(question_id: int, question: QuestionCreate, admin_password: str, db = Depends(get_db)):
+@router.put("/questions/{question_id}")
+def update_question(
+    question_id: int,
+    question: QuestionCreate,
+    admin_password: str = Query(...),
+    db: Session = Depends(get_db)
+):
     """Update a question"""
     verify_admin(admin_password)
     
-    db.connect()
-    
     # Verify question exists
-    query = "SELECT id FROM questions WHERE id = %s"
-    if not db.execute_single(query, (question_id,)):
-        db.disconnect()
+    db_question = db.query(Question).filter(Question.id == question_id).first()
+    if not db_question:
         raise HTTPException(status_code=404, detail="Question not found")
     
-    # Update question
-    query = """
-    UPDATE questions
-    SET topic_id = %s, subject_id = %s, exam_id = %s, question_text = %s, question_type = %s, difficulty_level = %s, updated_at = CURRENT_TIMESTAMP
-    WHERE id = %s
-    RETURNING id, topic_id, subject_id, exam_id, question_text, question_type, difficulty_level, created_at
-    """
-    params = (
-        question.topic_id,
-        question.subject_id,
-        question.exam_id,
-        question.question_text,
-        question.question_type,
-        question.difficulty_level,
-        question_id
-    )
-    result = db.execute_single(query, params)
+    db_question.exam_id = question.exam_id
+    db_question.subject_id = question.subject_id
+    db_question.topic_id = question.topic_id
+    db_question.question_text = question.question_text
+    db_question.option_a = question.option_a
+    db_question.option_b = question.option_b
+    db_question.option_c = question.option_c
+    db_question.option_d = question.option_d
+    db_question.correct_answer = question.correct_answer
+    db_question.explanation = question.explanation
+    db_question.difficulty_level = question.difficulty_level
     
-    # Update options if provided
-    if question.options:
-        # Delete existing options
-        delete_query = "DELETE FROM options WHERE question_id = %s"
-        db.execute_update(delete_query, (question_id,))
-        
-        # Add new options
-        for option in question.options:
-            option_query = "INSERT INTO options (question_id, option_text, is_correct) VALUES (%s, %s, %s)"
-            db.execute_insert(option_query, (question_id, option.option_text, option.is_correct))
-    
-    db.disconnect()
-    
-    return QuestionResponse(**dict(result))
+    db.commit()
+    db.refresh(db_question)
+    return db_question
 
 @router.delete("/questions/{question_id}")
-def delete_question(question_id: int, admin_password: str, db = Depends(get_db)):
+def delete_question(
+    question_id: int,
+    admin_password: str = Query(...),
+    db: Session = Depends(get_db)
+):
     """Delete a question"""
     verify_admin(admin_password)
     
-    db.connect()
+    db_question = db.query(Question).filter(Question.id == question_id).first()
+    if not db_question:
+        raise HTTPException(status_code=404, detail="Question not found")
     
-    # Delete question (cascades to options and user_progress)
-    query = "DELETE FROM questions WHERE id = %s"
-    db.execute_update(query, (question_id,))
-    db.disconnect()
+    db.delete(db_question)
+    db.commit()
     
     return {"message": "Question deleted successfully"}
 
 @router.get("/statistics")
-def get_statistics(admin_password: str, db = Depends(get_db)):
+def get_statistics(admin_password: str = Query(...), db: Session = Depends(get_db)):
     """Get platform statistics"""
     verify_admin(admin_password)
     
-    db.connect()
-    
-    # Get counts
-    users_query = "SELECT COUNT(*) as count FROM users"
-    questions_query = "SELECT COUNT(*) as count FROM questions"
-    attempts_query = "SELECT COUNT(*) as count FROM user_progress"
-    
-    users = db.execute_single(users_query)
-    questions = db.execute_single(questions_query)
-    attempts = db.execute_single(attempts_query)
-    
-    db.disconnect()
+    users_count = db.query(func.count(User.id)).scalar()
+    questions_count = db.query(func.count(Question.id)).scalar()
+    attempts_count = db.query(func.count(UserProgress.id)).scalar()
     
     return {
-        "total_users": users['count'],
-        "total_questions": questions['count'],
-        "total_attempts": attempts['count']
+        "total_users": users_count,
+        "total_questions": questions_count,
+        "total_attempts": attempts_count
     }

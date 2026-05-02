@@ -127,22 +127,29 @@ async function handleRegister(event) {
     const email = document.getElementById('email').value;
     const username = document.getElementById('regUsername').value;
     const password = document.getElementById('regPassword').value;
-    const targetExam = document.getElementById('targetExam').value;
+    const examInterest = document.getElementById('targetExam').value;
     
     try {
         console.log('[v0] Registering new user:', username);
-        await API.register({
+        const response = await API.register({
             username,
             email,
             password,
-            first_name: firstName,
-            last_name: lastName,
-            target_exam: targetExam
+            full_name: `${firstName} ${lastName}`,
+            exam_interest: examInterest
         });
         
-        showToast('Registration successful! Please login.', 'success');
+        // Store token and user info
+        localStorage.setItem(CONFIG.TOKEN_KEY, response.access_token);
+        
+        showToast('Registration successful! Logged in.', 'success');
         document.getElementById('registerForm').reset();
-        navigateTo('login');
+        
+        // Get current user info and navigate
+        const user = await API.getCurrentUser();
+        currentUser = user;
+        updateNavBar();
+        navigateTo('dashboard');
     } catch (error) {
         handleAPIError(error);
     }
