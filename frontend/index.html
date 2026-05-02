@@ -3,243 +3,304 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Question Bank - AI-Powered Exam Preparation</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Question Bank - Smart Exam Preparation</title>
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <!-- Navigation Bar -->
-    <nav class="navbar">
-        <div class="container navbar-content">
-            <div class="logo">
-                <h1>📚 Question Bank</h1>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="container nav-container">
+            <div class="nav-brand">
+                <h1 class="logo">Question Bank</h1>
             </div>
             <ul class="nav-menu" id="navMenu">
-                <li><a href="#home" class="nav-link active" onclick="navigateTo('home')">Home</a></li>
-                <li><a href="#browse" class="nav-link" onclick="navigateTo('browse')">Browse</a></li>
-                <li><a href="#dashboard" class="nav-link" onclick="navigateTo('dashboard')">Dashboard</a></li>
-                <li><a href="#bookmarks" class="nav-link" onclick="navigateTo('bookmarks')">Bookmarks</a></li>
-                <li id="userMenu" style="display:none;">
-                    <span class="user-greeting" id="userGreeting">User</span>
-                    <button class="logout-btn" onclick="logout()">Logout</button>
+                <li><a href="#" class="nav-link" onclick="navigateTo('home')">Home</a></li>
+                <li id="authNavItems" style="display:none;">
+                    <a href="#" class="nav-link" onclick="navigateTo('dashboard')">Dashboard</a>
+                    <a href="#" class="nav-link" onclick="navigateTo('browse')">Questions</a>
+                    <span class="user-greeting" id="userGreeting"></span>
+                    <button class="btn-logout" onclick="logout()">Logout</button>
                 </li>
-                <li id="authMenu">
-                    <button class="btn btn-primary" onclick="showLoginModal()">Login</button>
+                <li id="guestNavItems">
+                    <button class="btn btn-primary" onclick="navigateTo('login')">Login</button>
                 </li>
             </ul>
         </div>
     </nav>
 
-    <!-- Main Container -->
-    <main class="container">
+    <!-- Main Content -->
+    <main class="container main-content">
         <!-- Home Page -->
-        <section id="home" class="page active">
+        <div id="home" class="page active">
             <div class="hero">
                 <h2>Welcome to Question Bank</h2>
-                <p>AI-powered exam preparation platform with personalized recommendations</p>
-                <div class="hero-buttons">
-                    <button class="btn btn-primary btn-large" onclick="showLoginModal()">Get Started</button>
-                    <button class="btn btn-secondary btn-large" onclick="navigateTo('browse')">Browse Questions</button>
+                <p>Your AI-powered companion for exam preparation</p>
+                <div class="auth-buttons">
+                    <button class="btn btn-primary" onclick="navigateTo('login')">Login</button>
+                    <button class="btn btn-secondary" onclick="navigateTo('register')">Register</button>
                 </div>
             </div>
 
-            <div class="features">
+            <div class="features-grid">
                 <div class="feature-card">
-                    <h3>📝 Vast Question Bank</h3>
-                    <p>1000+ questions from English, Math, and other subjects</p>
-                </div>
-                <div class="feature-card">
-                    <h3>🤖 AI Recommendations</h3>
-                    <p>Personalized question suggestions based on your weak topics</p>
+                    <h3>Smart Search & Filter</h3>
+                    <p>Browse 1000+ questions by exam, subject, topic, and difficulty</p>
                 </div>
                 <div class="feature-card">
-                    <h3>📊 Progress Tracking</h3>
-                    <p>Monitor your learning progress with detailed analytics</p>
+                    <h3>Personalized Recommendations</h3>
+                    <p>AI suggests questions based on your weak areas and learning goals</p>
                 </div>
                 <div class="feature-card">
-                    <h3>🎯 Smart Filtering</h3>
-                    <p>Filter by exam, subject, topic, and difficulty level</p>
+                    <h3>Progress Tracking</h3>
+                    <p>Monitor accuracy, identify weak topics, and improve your performance</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Admin Management</h3>
+                    <p>Add, edit, and manage questions to build your question bank</p>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- Dashboard Page -->
-        <section id="dashboard" class="page">
-            <h2>Your Dashboard</h2>
-            <div class="dashboard-content">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h3>Questions Attempted</h3>
-                        <p class="stat-number" id="attemptedCount">0</p>
+        <!-- Login Page -->
+        <div id="login" class="page">
+            <div class="auth-container">
+                <h2>Login</h2>
+                <form id="loginForm" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" required>
                     </div>
-                    <div class="stat-card">
-                        <h3>Correct Answers</h3>
-                        <p class="stat-number" id="correctCount">0</p>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" required>
                     </div>
-                    <div class="stat-card">
-                        <h3>Accuracy Rate</h3>
-                        <p class="stat-number" id="accuracyRate">0%</p>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+                <p>Don&apos;t have an account? <a href="#" onclick="navigateTo('register')">Register here</a></p>
+            </div>
+        </div>
+
+        <!-- Register Page -->
+        <div id="register" class="page">
+            <div class="auth-container">
+                <h2>Register</h2>
+                <form id="registerForm" onsubmit="handleRegister(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="firstName">First Name</label>
+                            <input type="text" id="firstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="lastName">Last Name</label>
+                            <input type="text" id="lastName" required>
+                        </div>
                     </div>
-                    <div class="stat-card">
-                        <h3>Weak Topics</h3>
-                        <p class="stat-number" id="weakTopicsCount">0</p>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regUsername">Username</label>
+                        <input type="text" id="regUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regPassword">Password</label>
+                        <input type="password" id="regPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="targetExam">Target Exam</label>
+                        <select id="targetExam" required>
+                            <option value="">Select Exam</option>
+                            <option value="JEE">JEE (Engineering)</option>
+                            <option value="NEET">NEET (Medical)</option>
+                            <option value="UPSC">UPSC (Civil Services)</option>
+                            <option value="CAT">CAT (Management)</option>
+                            <option value="GATE">GATE (Engineering Graduate)</option>
+                            <option value="CLAT">CLAT (Law)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Register</button>
+                </form>
+                <p>Already have an account? <a href="#" onclick="navigateTo('login')">Login here</a></p>
+            </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="dashboard" class="page">
+            <div class="dashboard-container">
+                <h2>Your Dashboard</h2>
+                
+                <div class="stats-section">
+                    <h3>Your Progress</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalAttempted">0</div>
+                            <div class="stat-label">Questions Attempted</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="correctAnswers">0</div>
+                            <div class="stat-label">Correct Answers</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="accuracy">0%</div>
+                            <div class="stat-label">Accuracy</div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="dashboard-section">
-                    <h3>Recommended Questions for You</h3>
-                    <div id="recommendedList" class="questions-grid">
-                        <p class="loading">Loading recommendations...</p>
-                    </div>
+                <div class="recommendations-section">
+                    <h3>Personalized Recommendations</h3>
+                    <div id="recommendationsList" class="questions-grid"></div>
                 </div>
 
-                <div class="dashboard-section">
-                    <h3>Your Learning Path</h3>
-                    <div id="learningPath" class="learning-path">
-                        <p class="loading">Analyzing your progress...</p>
-                    </div>
+                <div class="weak-topics-section">
+                    <h3>Areas for Improvement</h3>
+                    <div id="weakTopicsList" class="weak-topics-list"></div>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- Browse Questions Page -->
-        <section id="browse" class="page">
-            <h2>Browse Questions</h2>
-            
-            <div class="filters-section">
-                <div class="filter-group">
-                    <label for="examFilter">Exam:</label>
-                    <select id="examFilter" onchange="loadSubjects()">
-                        <option value="">All Exams</option>
-                    </select>
+        <!-- Browse Questions -->
+        <div id="browse" class="page">
+            <div class="browse-container">
+                <h2>Browse Questions</h2>
+                
+                <div class="filter-section">
+                    <h3>Filters</h3>
+                    <div class="filter-grid">
+                        <div class="form-group">
+                            <label for="filterExam">Exam</label>
+                            <select id="filterExam" onchange="applyFilters()">
+                                <option value="">All Exams</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="filterSubject">Subject</label>
+                            <select id="filterSubject" onchange="applyFilters()">
+                                <option value="">All Subjects</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="filterTopic">Topic</label>
+                            <select id="filterTopic" onchange="applyFilters()">
+                                <option value="">All Topics</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="filterDifficulty">Difficulty</label>
+                            <select id="filterDifficulty" onchange="applyFilters()">
+                                <option value="">All Levels</option>
+                                <option value="easy">Easy</option>
+                                <option value="medium">Medium</option>
+                                <option value="hard">Hard</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="searchKeyword" placeholder="Search questions..." onkeyup="applyFilters()">
+                    </div>
                 </div>
-                <div class="filter-group">
-                    <label for="subjectFilter">Subject:</label>
-                    <select id="subjectFilter" onchange="loadTopics()">
-                        <option value="">All Subjects</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="topicFilter">Topic:</label>
-                    <select id="topicFilter" onchange="loadQuestions()">
-                        <option value="">All Topics</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="difficultyFilter">Difficulty:</label>
-                    <select id="difficultyFilter" onchange="loadQuestions()">
-                        <option value="">All Levels</option>
-                        <option value="Easy">Easy</option>
-                        <option value="Medium">Medium</option>
-                        <option value="Hard">Hard</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <input type="text" id="searchFilter" placeholder="Search questions..." onkeyup="loadQuestions()">
+
+                <div class="questions-section">
+                    <div id="questionsList" class="questions-grid"></div>
+                    <div id="pagination" class="pagination"></div>
                 </div>
             </div>
+        </div>
 
-            <div id="questionsList" class="questions-grid">
-                <p class="loading">Loading questions...</p>
-            </div>
-        </section>
-
-        <!-- Bookmarks Page -->
-        <section id="bookmarks" class="page">
-            <h2>Bookmarked Questions</h2>
-            <div id="bookmarksList" class="questions-grid">
-                <p class="loading">Loading bookmarks...</p>
-            </div>
-        </section>
-
-        <!-- Question Detail Page -->
-        <section id="questionDetail" class="page">
-            <button class="btn btn-secondary" onclick="navigateTo('browse')">← Back to Questions</button>
-            
+        <!-- Question Detail -->
+        <div id="questionDetail" class="page">
+            <button class="btn btn-secondary" onclick="navigateTo('browse')">Back</button>
             <div class="question-detail-container">
-                <div class="question-card-detail">
-                    <h3 id="detailQuestion"></h3>
-                    <p class="question-meta">
-                        <span id="detailDifficulty" class="difficulty-badge"></span>
-                    </p>
-                    
-                    <div id="detailOptions" class="options-list"></div>
-                    
-                    <button class="btn btn-primary" id="submitBtn" onclick="submitAnswer()">Submit Answer</button>
-                    
-                    <div id="resultContainer" style="display:none;">
-                        <p id="resultMessage" class="result-message"></p>
-                        <div id="explanation" class="explanation"></div>
-                    </div>
+                <div id="questionContent" class="question-content"></div>
+            </div>
+        </div>
 
-                    <div class="question-actions">
-                        <button class="btn btn-secondary" id="bookmarkBtn" onclick="toggleBookmark()">📌 Bookmark</button>
-                    </div>
+        <!-- Admin Panel -->
+        <div id="admin" class="page">
+            <div class="admin-container">
+                <h2>Admin Panel</h2>
+                <div class="admin-tabs">
+                    <button class="tab-btn active" onclick="switchAdminTab('add-question')">Add Question</button>
+                    <button class="tab-btn" onclick="switchAdminTab('statistics')">Statistics</button>
+                </div>
+
+                <div id="add-question-tab" class="admin-tab-content">
+                    <form id="addQuestionForm" onsubmit="handleAddQuestion(event)">
+                        <div class="form-group">
+                            <label for="adminExam">Exam</label>
+                            <select id="adminExam" required onchange="loadAdminSubjects()">
+                                <option value="">Select Exam</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="adminSubject">Subject</label>
+                            <select id="adminSubject" required onchange="loadAdminTopics()">
+                                <option value="">Select Subject</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="adminTopic">Topic</label>
+                            <select id="adminTopic" required>
+                                <option value="">Select Topic</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="questionText">Question</label>
+                            <textarea id="questionText" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="questionType">Type</label>
+                            <select id="questionType" required>
+                                <option value="mcq">Multiple Choice</option>
+                                <option value="short_answer">Short Answer</option>
+                                <option value="essay">Essay</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="difficultyLevel">Difficulty</label>
+                            <select id="difficultyLevel" required>
+                                <option value="easy">Easy</option>
+                                <option value="medium">Medium</option>
+                                <option value="hard">Hard</option>
+                            </select>
+                        </div>
+                        <div id="optionsContainer"></div>
+                        <button type="submit" class="btn btn-primary">Add Question</button>
+                    </form>
+                </div>
+
+                <div id="statistics-tab" class="admin-tab-content hidden">
+                    <h3>Platform Statistics</h3>
+                    <div id="statisticsContent" class="statistics-content"></div>
                 </div>
             </div>
-        </section>
+        </div>
+
+        <!-- Profile Page -->
+        <div id="profile" class="page">
+            <div class="profile-container">
+                <h2>My Profile</h2>
+                <div id="userProfile" class="user-profile"></div>
+            </div>
+        </div>
     </main>
 
-    <!-- Login Modal -->
-    <div id="loginModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeLoginModal()">&times;</span>
-            <h2>Login</h2>
-            <form id="loginForm" onsubmit="handleLogin(event)">
-                <div class="form-group">
-                    <label for="loginEmail">Email:</label>
-                    <input type="email" id="loginEmail" required>
-                </div>
-                <div class="form-group">
-                    <label for="loginPassword">Password:</label>
-                    <input type="password" id="loginPassword" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Login</button>
-                <p>Don't have an account? <a href="#" onclick="switchToRegister()">Register here</a></p>
-            </form>
-        </div>
-    </div>
-
-    <!-- Register Modal -->
-    <div id="registerModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeRegisterModal()">&times;</span>
-            <h2>Register</h2>
-            <form id="registerForm" onsubmit="handleRegister(event)">
-                <div class="form-group">
-                    <label for="registerUsername">Username:</label>
-                    <input type="text" id="registerUsername" required>
-                </div>
-                <div class="form-group">
-                    <label for="registerFullName">Full Name:</label>
-                    <input type="text" id="registerFullName" required>
-                </div>
-                <div class="form-group">
-                    <label for="registerEmail">Email:</label>
-                    <input type="email" id="registerEmail" required>
-                </div>
-                <div class="form-group">
-                    <label for="registerPassword">Password:</label>
-                    <input type="password" id="registerPassword" required>
-                </div>
-                <div class="form-group">
-                    <label for="registerExam">Target Exam:</label>
-                    <select id="registerExam" required>
-                        <option value="">Select Exam</option>
-                        <option value="SAT">SAT</option>
-                        <option value="TOEFL">TOEFL</option>
-                        <option value="GRE">GRE</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-primary">Register</button>
-                <p>Already have an account? <a href="#" onclick="switchToLogin()">Login here</a></p>
-            </form>
-        </div>
-    </div>
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2024 Question Bank. All rights reserved.</p>
+    </footer>
 
     <!-- Toast Notification -->
     <div id="toast" class="toast"></div>
 
-    <script src="app.js"></script>
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/browse.js"></script>
+    <script src="js/admin.js"></script>
 </body>
 </html>
