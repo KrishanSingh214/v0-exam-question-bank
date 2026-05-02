@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Bank - AI-Powered Exam Prep</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 1.5rem 2rem;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        
+        nav {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        nav button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 0.7rem 1.2rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        nav button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        nav button.active {
+            background: white;
+            color: #667eea;
+        }
+        
+        .container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 2rem;
+            max-width: 600px;
+            width: 100%;
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button.btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button.btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        button.btn:active {
+            transform: translateY(0);
+        }
+        
+        .question-card {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            margin-bottom: 2rem;
+        }
+        
+        .question-number {
+            color: #667eea;
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .question-text {
+            font-size: 1.2rem;
+            color: #333;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .option {
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .option:hover {
+            border-color: #667eea;
+            background: #f5f7ff;
+        }
+        
+        .option input[type="radio"] {
+            width: auto;
+        }
+        
+        .option.selected {
+            border-color: #667eea;
+            background: #f5f7ff;
+        }
+        
+        .option.correct {
+            border-color: #4caf50;
+            background: #f1f8f6;
+            color: #4caf50;
+        }
+        
+        .option.incorrect {
+            border-color: #f44336;
+            background: #fef1f0;
+            color: #f44336;
+        }
+        
+        .explanation {
+            background: #f5f7ff;
+            border-left: 4px solid #667eea;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            border-radius: 5px;
+            color: #555;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .badge.easy {
+            background: #4caf50;
+        }
+        
+        .badge.medium {
+            background: #ff9800;
+        }
+        
+        .badge.hard {
+            background: #f44336;
+        }
+        
+        .weak-topics {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1.5rem 0;
+        }
+        
+        .weak-topics h3 {
+            color: #ff9800;
+            margin-bottom: 0.5rem;
+        }
+        
+        .topic-item {
+            background: white;
+            padding: 0.8rem;
+            margin: 0.5rem 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .success-message {
+            background: #4caf50;
+            color: white;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+        }
+        
+        .error-message {
+            background: #f44336;
+            color: white;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+        }
+        
+        .user-info {
+            color: white;
+            text-align: right;
+        }
+        
+        .user-name {
+            font-weight: 700;
+            margin-bottom: 0.3rem;
+        }
+        
+        .exam-info {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .section-title {
+            color: #667eea;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+        
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            
+            header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            nav {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>📚 Question Bank</h1>
+        <div id="userSection" class="user-info hidden">
+            <div class="user-name" id="userName"></div>
+            <div class="exam-info" id="userExam"></div>
+        </div>
+        <nav id="nav">
+            <button class="nav-btn active" onclick="showPage('login')">Login</button>
+            <button class="nav-btn" onclick="showPage('register')">Register</button>
+            <button class="nav-btn hidden" id="dashboardBtn" onclick="showPage('dashboard')">Dashboard</button>
+            <button class="nav-btn hidden" id="browseBtn" onclick="showPage('browse')">Browse</button>
+            <button class="nav-btn hidden" id="logoutBtn" onclick="logout()">Logout</button>
+        </nav>
+    </header>
+    
+    <div class="container">
+        <!-- Login Page -->
+        <div id="loginPage" class="card">
+            <h2 style="margin-bottom: 1.5rem; color: #333;">Login to Question Bank</h2>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="loginUsername" placeholder="Enter username" value="demo">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword" placeholder="Enter password" value="demo123">
+            </div>
+            <button class="btn" onclick="handleLogin()">Login</button>
+            <p style="margin-top: 1rem; color: #666; text-align: center;">Try: demo / demo123</p>
+        </div>
+        
+        <!-- Register Page -->
+        <div id="registerPage" class="card hidden">
+            <h2 style="margin-bottom: 1.5rem; color: #333;">Create New Account</h2>
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="regName" placeholder="Enter your name">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="regEmail" placeholder="Enter your email">
+            </div>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="regUsername" placeholder="Choose username">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="regPassword" placeholder="Enter password">
+            </div>
+            <div class="form-group">
+                <label>Target Exam</label>
+                <select id="regExam">
+                    <option>JEE Main</option>
+                    <option>NEET</option>
+                    <option>GATE</option>
+                    <option>CAT</option>
+                </select>
+            </div>
+            <button class="btn" onclick="handleRegister()">Register</button>
+        </div>
+        
+        <!-- Dashboard Page -->
+        <div id="dashboardPage" class="hidden" style="width: 100%; max-width: 900px;">
+            <div class="card">
+                <h2 class="section-title">📊 Your Dashboard</h2>
+                
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="stat-number" id="totalAttempted">0</div>
+                        <div class="stat-label">Questions Attempted</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number" id="totalCorrect">0</div>
+                        <div class="stat-label">Correct Answers</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number" id="accuracy">0%</div>
+                        <div class="stat-label">Accuracy</div>
+                    </div>
+                </div>
+                
+                <div class="weak-topics">
+                    <h3>📌 Your Weak Topics (< 60% Accuracy)</h3>
+                    <div id="weakTopicsList"></div>
+                    <p id="noWeakTopics" style="color: #666;">Great! No weak topics yet. Keep practicing!</p>
+                </div>
+                
+                <h3 style="color: #667eea; margin: 2rem 0 1rem;">🎯 AI Recommendations</h3>
+                <div id="recommendationsList"></div>
+                
+                <button class="btn" onclick="showPage('browse')" style="margin-top: 1.5rem;">Start Practicing →</button>
+            </div>
+        </div>
+        
+        <!-- Browse Questions Page -->
+        <div id="browsePage" class="hidden" style="width: 100%; max-width: 800px;">
+            <div style="margin-bottom: 1.5rem;">
+                <h2 class="section-title">🔍 Browse Questions</h2>
+                <div class="grid-2">
+                    <div>
+                        <label>Subject</label>
+                        <select id="filterSubject" onchange="updateQuestions()">
+                            <option value="">All Subjects</option>
+                            <option value="Physics">Physics</option>
+                            <option value="Chemistry">Chemistry</option>
+                            <option value="Mathematics">Mathematics</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Topic</label>
+                        <select id="filterTopic" onchange="updateQuestions()">
+                            <option value="">All Topics</option>
+                            <option value="Mechanics">Mechanics</option>
+                            <option value="Optics">Optics</option>
+                            <option value="Waves">Waves</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div>
+                        <label>Difficulty</label>
+                        <select id="filterDifficulty" onchange="updateQuestions()">
+                            <option value="">All Levels</option>
+                            <option value="easy">Easy</option>
+                            <option value="medium">Medium</option>
+                            <option value="hard">Hard</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Search</label>
+                        <input type="text" id="filterKeyword" placeholder="Search questions..." onkeyup="updateQuestions()">
+                    </div>
+                </div>
+            </div>
+            
+            <div id="questionsContainer"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Mock data
+        const mockQuestions = [
+            {
+                id: 1,
+                question_text: "A car accelerates from rest at 2 m/s². What is its velocity after 5 seconds?",
+                subject: "Physics",
+                topic: "Mechanics",
+                difficulty_level: "easy",
+                option_a: "5 m/s",
+                option_b: "10 m/s",
+                option_c: "25 m/s",
+                option_d: "50 m/s",
+                correct_answer: "B",
+                explanation: "Using v = u + at, where u=0, a=2, t=5: v = 0 + 2×5 = 10 m/s"
+            },
+            {
+                id: 2,
+                question_text: "What is the SI unit of force?",
+                subject: "Physics",
+                topic: "Mechanics",
+                difficulty_level: "easy",
+                option_a: "Dyne",
+                option_b: "Newton",
+                option_c: "Erg",
+                option_d: "Joule",
+                correct_answer: "B",
+                explanation: "Newton (N) is the SI unit of force. 1 N = 1 kg⋅m/s²"
+            },
+            {
+                id: 3,
+                question_text: "What is the speed of light in vacuum?",
+                subject: "Physics",
+                topic: "Optics",
+                difficulty_level: "easy",
+                option_a: "2 × 10⁸ m/s",
+                option_b: "3 × 10⁸ m/s",
+                option_c: "4 × 10⁸ m/s",
+                option_d: "5 × 10⁸ m/s",
+                correct_answer: "B",
+                explanation: "The speed of light in vacuum is approximately 3 × 10⁸ m/s"
+            },
+            {
+                id: 4,
+                question_text: "What is the refractive index of water?",
+                subject: "Physics",
+                topic: "Optics",
+                difficulty_level: "easy",
+                option_a: "1.0",
+                option_b: "1.33",
+                option_c: "1.5",
+                option_d: "2.0",
+                correct_answer: "B",
+                explanation: "The refractive index of water is approximately 1.33 at room temperature"
+            },
+            {
+                id: 5,
+                question_text: "A projectile is launched at 45° with initial velocity 20 m/s. Find max height (g=10 m/s²)",
+                subject: "Physics",
+                topic: "Mechanics",
+                difficulty_level: "medium",
+                option_a: "5 m",
+                option_b: "10 m",
+                option_c: "20 m",
+                option_d: "25 m",
+                correct_answer: "B",
+                explanation: "At 45°, h_max = (v₀²sin²θ)/(2g) = (400 × 0.5)/(20) = 10 m"
+            },
+            {
+                id: 6,
+                question_text: "A light ray enters glass (n=1.5) from air at 30°. Find refraction angle.",
+                subject: "Physics",
+                topic: "Optics",
+                difficulty_level: "medium",
+                option_a: "15°",
+                option_b: "19.5°",
+                option_c: "25°",
+                option_d: "30°",
+                correct_answer: "B",
+                explanation: "Using Snell's law: sin(30°) = 1.5 × sin(θ), θ ≈ 19.5°"
+            },
+            {
+                id: 7,
+                question_text: "What is the frequency of a wave with wavelength 2m and speed 40 m/s?",
+                subject: "Physics",
+                topic: "Waves",
+                difficulty_level: "easy",
+                option_a: "10 Hz",
+                option_b: "20 Hz",
+                option_c: "40 Hz",
+                option_d: "80 Hz",
+                correct_answer: "B",
+                explanation: "f = v/λ = 40/2 = 20 Hz"
+            },
+            {
+                id: 8,
+                question_text: "The period of a wave is 0.5s. What is its frequency?",
+                subject: "Physics",
+                topic: "Waves",
+                difficulty_level: "easy",
+                option_a: "0.5 Hz",
+                option_b: "1 Hz",
+                option_c: "2 Hz",
+                option_d: "0.25 Hz",
+                correct_answer: "C",
+                explanation: "f = 1/T = 1/0.5 = 2 Hz"
+            },
+            {
+                id: 9,
+                question_text: "Two sound waves have frequencies 256 Hz and 260 Hz. Beat frequency is?",
+                subject: "Physics",
+                topic: "Waves",
+                difficulty_level: "medium",
+                option_a: "4 Hz",
+                option_b: "8 Hz",
+                option_c: "16 Hz",
+                option_d: "516 Hz",
+                correct_answer: "A",
+                explanation: "Beat frequency = |f₁ - f₂| = |256 - 260| = 4 Hz"
+            }
+        ];
+        
+        // Global state
+        let currentUser = null;
+        let userProgress = {};
+        let currentQuestion = 0;
+        
+        // Mock recommendations based on weak topics
+        function generateRecommendations() {
+            const weakTopics = [
+                { name: "Optics", accuracy: 45, questions: [3, 4, 6] },
+                { name: "Waves", accuracy: 55, questions: [7, 8, 9] }
+            ];
+            
+            const recs = [];
+            for (const topic of weakTopics) {
+                for (const qId of topic.questions) {
+                    if (!userProgress[qId] || !userProgress[qId].attempted) {
+                        const q = mockQuestions.find(q => q.id === qId);
+                        recs.push({
+                            ...q,
+                            reason: `Your weak area - ${topic.accuracy}% accuracy`
+                        });
+                    }
+                }
+            }
+            return recs;
+        }
+        
+        // Page navigation
+        function showPage(page) {
+            document.querySelectorAll('[id$="Page"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById(page + 'Page').classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            event?.target?.classList.add('active');
+            
+            if (page === 'dashboard') {
+                updateDashboard();
+            } else if (page === 'browse') {
+                updateQuestions();
+            }
+        }
+        
+        // Login
+        function handleLogin() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (username && password) {
+                currentUser = {
+                    username,
+                    full_name: username === 'demo' ? 'Demo User' : username,
+                    exam_interest: 'JEE Main'
+                };
+                
+                // Initialize user progress
+                userProgress = {
+                    1: { attempted: true, correct: true },
+                    2: { attempted: true, correct: true },
+                    3: { attempted: true, correct: false },
+                    4: { attempted: true, correct: false },
+                    5: { attempted: true, correct: true },
+                    7: { attempted: true, correct: true },
+                };
+                
+                updateUI();
+                showPage('dashboard');
+            } else {
+                alert('Please enter username and password');
+            }
+        }
+        
+        // Register
+        function handleRegister() {
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const username = document.getElementById('regUsername').value;
+            const exam = document.getElementById('regExam').value;
+            
+            if (name && email && username) {
+                currentUser = {
+                    username,
+                    full_name: name,
+                    exam_interest: exam
+                };
+                userProgress = {};
+                updateUI();
+                showPage('dashboard');
+            } else {
+                alert('Please fill in all fields');
+            }
+        }
+        
+        // Logout
+        function logout() {
+            currentUser = null;
+            userProgress = {};
+            updateUI();
+            showPage('login');
+        }
+        
+        // Update UI based on login state
+        function updateUI() {
+            if (currentUser) {
+                document.getElementById('userSection').classList.remove('hidden');
+                document.getElementById('userName').textContent = currentUser.full_name;
+                document.getElementById('userExam').textContent = currentUser.exam_interest;
+                document.getElementById('dashboardBtn').classList.remove('hidden');
+                document.getElementById('browseBtn').classList.remove('hidden');
+                document.getElementById('logoutBtn').classList.remove('hidden');
+                document.querySelectorAll('.nav-btn')[0].classList.add('hidden');
+                document.querySelectorAll('.nav-btn')[1].classList.add('hidden');
+            } else {
+                document.getElementById('userSection').classList.add('hidden');
+                document.getElementById('dashboardBtn').classList.add('hidden');
+                document.getElementById('browseBtn').classList.add('hidden');
+                document.getElementById('logoutBtn').classList.add('hidden');
+                document.querySelectorAll('.nav-btn')[0].classList.remove('hidden');
+                document.querySelectorAll('.nav-btn')[1].classList.remove('hidden');
+            }
+        }
+        
+        // Update Dashboard
+        function updateDashboard() {
+            let attempted = 0, correct = 0;
+            
+            for (const [qId, progress] of Object.entries(userProgress)) {
+                if (progress.attempted) {
+                    attempted++;
+                    if (progress.correct) correct++;
+                }
+            }
+            
+            const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
+            
+            document.getElementById('totalAttempted').textContent = attempted;
+            document.getElementById('totalCorrect').textContent = correct;
+            document.getElementById('accuracy').textContent = accuracy + '%';
+            
+            // Show weak topics
+            const weakTopics = [
+                { name: "Optics", accuracy: 40, questions: 5 },
+                { name: "Waves", accuracy: 50, questions: 4 }
+            ];
+            
+            const weakList = document.getElementById('weakTopicsList');
+            if (weakTopics.length > 0) {
+                document.getElementById('noWeakTopics').classList.add('hidden');
+                weakList.innerHTML = weakTopics.map(topic => `
+                    <div class="topic-item">
+                        <div>
+                            <strong>${topic.name}</strong>
+                            <div style="color: #f44336; font-size: 0.9rem;">${topic.accuracy}% accuracy</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="color: #667eea; font-weight: 700;">${topic.questions} Qs</div>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${topic.accuracy}%"></div>
+                    </div>
+                `).join('');
+            }
+            
+            // Show recommendations
+            const recs = generateRecommendations();
+            const recList = document.getElementById('recommendationsList');
+            recList.innerHTML = recs.slice(0, 3).map(q => `
+                <div style="background: #f5f7ff; padding: 1rem; margin-bottom: 0.5rem; border-radius: 5px;">
+                    <div style="color: #667eea; font-weight: 700; margin-bottom: 0.3rem;">${q.topic}</div>
+                    <div style="color: #333; margin-bottom: 0.5rem;">${q.question_text}</div>
+                    <span class="badge ${q.difficulty_level}">${q.difficulty_level}</span>
+                </div>
+            `).join('');
+        }
+        
+        // Update Questions
+        function updateQuestions() {
+            const subject = document.getElementById('filterSubject').value;
+            const topic = document.getElementById('filterTopic').value;
+            const difficulty = document.getElementById('filterDifficulty').value;
+            const keyword = document.getElementById('filterKeyword').value.toLowerCase();
+            
+            let filtered = mockQuestions.filter(q => {
+                return (!subject || q.subject === subject) &&
+                       (!topic || q.topic === topic) &&
+                       (!difficulty || q.difficulty_level === difficulty) &&
+                       (!keyword || q.question_text.toLowerCase().includes(keyword));
+            });
+            
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = filtered.map((q, idx) => `
+                <div class="question-card">
+                    <div class="question-number">Question ${idx + 1} of ${filtered.length}</div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <span class="badge">${q.subject}</span>
+                        <span class="badge" style="background: #9c27b0;">${q.topic}</span>
+                        <span class="badge ${q.difficulty_level}">${q.difficulty_level}</span>
+                    </div>
+                    <div class="question-text">${q.question_text}</div>
+                    <div class="options">
+                        ${['option_a', 'option_b', 'option_c', 'option_d'].map((opt, i) => {
+                            const letter = String.fromCharCode(65 + i);
+                            const isSelected = userProgress[q.id]?.answer === letter;
+                            const isCorrect = letter === q.correct_answer;
+                            const showResult = userProgress[q.id]?.attempted;
+                            
+                            let className = 'option';
+                            if (isSelected && showResult) {
+                                className += isCorrect ? ' correct' : ' incorrect';
+                            } else if (isSelected) {
+                                className += ' selected';
+                            } else if (showResult && isCorrect) {
+                                className += ' correct';
+                            }
+                            
+                            return `
+                                <label class="${className}">
+                                    <input type="radio" name="q${q.id}" value="${letter}" 
+                                        ${isSelected ? 'checked' : ''} 
+                                        onchange="submitAnswer(${q.id}, '${letter}')" 
+                                        ${showResult ? 'disabled' : ''}>
+                                    <span><strong>${letter})</strong> ${q[opt]}</span>
+                                </label>
+                            `;
+                        }).join('')}
+                    </div>
+                    ${showResult ? `
+                        <div class="explanation">
+                            <strong>✓ Explanation:</strong><br>${q.explanation}
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+        
+        // Submit Answer
+        function submitAnswer(questionId, answer) {
+            userProgress[questionId] = {
+                attempted: true,
+                answer: answer,
+                correct: answer === mockQuestions.find(q => q.id === questionId).correct_answer
+            };
+            updateQuestions();
+        }
+        
+        // Initialize
+        updateUI();
+    </script>
+</body>
+</html>
